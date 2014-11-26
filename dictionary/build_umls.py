@@ -21,19 +21,34 @@ def filterCUI(in_queue, redis_dict):
         if line == None:
             return
         rows = line.split('|')
+
+        cui = rows[0]
+        lang = rows[1]
+        status = rows[2]
+        form = rows[4]
+        source = rows[11]
+        term_type = rows[12]
+        suppress = rows[16]
+        source_code_id = rows[13]
+        text = rows[14]
+        code_sources = {"ICD9CM" : "I:", "RXNORM":"R:", "SNOMEDCT_US":"S:"}
+
         prefText = False
-        if rows[1] == 'ENG' and rows[16] == 'N':
-            cui = rows[0]
+        if lang == 'ENG' and suppress == 'N':
+
 
             # Remove puncuation
-            text = rows[14].translate(table)
+            text = text.translate(table)
 
             # Obtain tokens
             text = get_tokens(text.lower())
 
-            if rows[2] == 'P' and rows[6] == 'Y':
+            if status == 'P' and form == 'PF':
                 redis_dict.sadd(cui, ' '.join(text))
-            #src = rows[11]
+
+            if code_sources.has_key(source):
+                redis_dict.sadd(cui, code_sources[source] + str(source_code_id))
+
             redis_dict.sadd(' '.join(text), cui)
 
         if (line_no % 10000) == 0:

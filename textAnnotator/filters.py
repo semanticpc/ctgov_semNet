@@ -11,6 +11,7 @@ class ConceptFilters(object):
 
         # Stopwords
         if not stopwords:
+            self.filter_stopwords = False
             self.stopwords = (set(), set())
         else:
             self.stopwords = stopwords
@@ -29,6 +30,7 @@ class ConceptFilters(object):
         self.tui_filter = True
 
         if not tuis:
+            self.tui_filter = False
             self.accepted_tuis = list()
         else:
             self.accepted_tuis = list(tuis)
