@@ -33,7 +33,7 @@ class DictionaryMapping(object):
 
                     # Filter Semantic Types
                     for tag in tags:
-                        for tui in self.umls.get_tui(tag):
+                        for tui in self.umls.get_tui(tag[0]):
                             if self.filters.TUI_filter(tui):
                                 ntags.append(tag)
                                 break
@@ -76,8 +76,10 @@ class DictionaryMapping(object):
         if hit is None or len(hit) == 0 or len(tokens) > self.ngram:
             return None
         else:
-            #print hit
-            return hit
+            hits = []
+            for h in hit:
+                hits.append((h, w))
+            return hits
 
 
 
