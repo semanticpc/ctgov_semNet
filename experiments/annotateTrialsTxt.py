@@ -15,7 +15,10 @@ import sys
 
 log = strd_logger('annotate-trials')
 
-def annotate_trials(f_data, outPath, nprocs=1):
+def annotate_trials(f_data, f_stopwords, f_tui, f_pos, umls_port, outPath, nprocs=1):
+
+    stopwords = load_stop_words(f_stopwords)
+    tuis = load_tuis(f_tui)
 
     # open the clinical trail ids file to process
     nct_ids = []
@@ -30,7 +33,8 @@ def annotate_trials(f_data, outPath, nprocs=1):
     chunksize = int(math.ceil(len(nct_ids) / float(nprocs)))
     for i in xrange(nprocs):
         print chunksize * i, chunksize * (i + 1)
-        p = Process(target=_worker, args=(nct_ids[chunksize * i:chunksize * (i + 1)], corpus_path, outPath, (i + 1)))
+        p = Process(target=_worker, args=(nct_ids[chunksize * i:chunksize * (i + 1)], corpus_path,
+                                          stopwords, tuis, outPath, (i + 1)))
         procs.append(p)
         p.start()
 
@@ -41,14 +45,18 @@ def annotate_trials(f_data, outPath, nprocs=1):
 
 
 
-def _worker(process_ids, corpusPath, outPath, pid):
+def _worker(process_ids, corpusPath, stopwords, tuis, outPath, pid):
+    umls = UMLSDict()
     parser = CT_Parser(corpusPath)
+    filters = ConceptFilters(stopwords, tuis)
+    mapper = DictionaryMapping(umls, filters)
 
     trials = dict()
     # Iterate over NCT trials
     for i in xrange(0, len(process_ids)):
         trial_ID = process_ids[i]
         trial = parser.parse(trial_ID)
+        outFile = open(outPath + '/' + trial_ID, 'wb')
 
         allTxt = ''
         if trial.ec_text_exc is not None:
@@ -59,12 +67,11 @@ def _worker(process_ids, corpusPath, outPath, pid):
 
         cleanText = nlpUtil.clean_text(allTxt)
         sentences = nlpUtil.get_sentences(cleanText)
-        sentID = 1
         for sent in sentences:
 
             sent = nlpUtil.pre_process(sent)
             tokens = nlpUtil.get_tokens(sent)
-            #posTags = nlpUtil.get_POSTags(tokens)
+            posTags = []#nlpUtil.get_POSTags(tokens)
 
             # degub = False
             # if debug:
@@ -72,15 +79,19 @@ def _worker(process_ids, corpusPath, outPath, pid):
             #         continue
             #         print '\n', ' '.join(tokens) , '\n'
 
-            out = open(outPath + '/' + str(trial_ID) + '-' +  str(sentID) + '.txt', 'w')
-            unicode_str = ' '.join(tokens)
-            #print '\n', ' '.join(tokens) , '\n'
-            out.write(unicode_str.encode('utf8', 'ignore'))
-            sentID += 1
-
+            tags = mapper.process_sent(tokens, posTags)
+            trial.concepts.append(tags)
+            if len(tags) == 0:
+                outFile.write(str(trial_ID) + '|' +  unicode(sent).encode('ascii', 'ignore') + '|' + 'C0000000' + '\n')
+            else:
+                for window in tags:
+                    for c in window:
+                        outFile.write(str(trial_ID) + '|' +  unicode(sent).encode('ascii', 'ignore') + '|' + c + '\n')
+        trials[trial_ID] = trial
         if i % 1000 == 0:
             log.info(' --- core %d: processed %d documents' % (pid, i))
-
+    # Pickle to disk
+    #pickle.dump( trials, open(outPath + '/' + str(pid) + '.pkl' , "wb"))
 
 
 # Main Function
@@ -92,22 +103,36 @@ def _process_args():
     # ids file
     parser.add_argument('-data_folder', default='/Users/praveen/work/data/ctgov_Sep23/',
                         help='file containing clinical ids to process')
+    # Accepted TUIs
+    parser.add_argument('-tui', default='/Users/praveen/work/data/tuis/tuis.txt',
+                        help='stop word directory')
+    # stop word file
+    parser.add_argument('-stop', default='/Users/praveen/work/data/stopwords/',
+                        help='stop word directory')
+    # umls Redis port
+    parser.add_argument('-umls_port', default=None, help='umls redis port (default: None)')
+    # pos tags
+    parser.add_argument('-pos', default=None, help='part-of-speech admitted tag file (default: None)')
 
     # output path
-    parser.add_argument('-out', default='/Users/praveen/work/output/processed_ctgovSep23/sentDataset',
+    parser.add_argument('-out', default='/Users/praveen/work/output/processed_ctgovSep23/annotated_trials_txt/',
                         help='part-of-speech admitted tag file (default: None)')
 
     # number of processors to use
-    parser.add_argument('-c', default=5, type=int, help='number of processors (default: 1)')
+    parser.add_argument('-c', default=7, type=int, help='number of processors (default: 1)')
     return parser.parse_args(sys.argv[1:])
 
 
 if __name__ == '__main__':
     args = _process_args()
 
-    annotate_trials(args.data_folder, args.out, args.c)
+    annotate_trials(args.data_folder, args.stop, args.tui, args.pos, args.umls_port, args.out, args.c)
 
-    # open the clinical trail ids file to process
+
+    # stopwords = load_stop_words(args.stop)
+    # tuis = load_tuis(args.tui)
+    #
+    # # open the clinical trail ids file to process
     # nct_ids = []
     # for line in open(args.data_folder + '/trial_ids.txt', 'rb'):
     #     nct_ids.append(line.strip())
@@ -117,4 +142,4 @@ if __name__ == '__main__':
     # # process each clinical trial and store to XML file
     # log.info('processing clinical trials')
     # procs = []
-    # _worker(nct_ids, corpus_path, args.out, 10)
+    # _worker(nct_ids, corpus_path, stopwords, tuis, args.out, 1)

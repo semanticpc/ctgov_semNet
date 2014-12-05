@@ -52,8 +52,8 @@ def _worker(process_ids, corpusPath, stopwords, tuis, outPath, pid):
     filters = ConceptFilters(stopwords, tuis)
     mapper = DictionaryMapping(umls, filters)
     db = MySQLdb.connect(host="localhost", # your host, usually localhost
-                         user="root", # your username
-                          passwd="", # your password
+                         user="umls", # your username
+                          passwd="umls", # your password
                           db="ctgovSemNet") # name of the data base
     # you must create a Cursor object. It will let
     #  you execute all the queries you need
@@ -128,13 +128,13 @@ def _process_args():
     parser = argparse.ArgumentParser(description='Download and Process Clinical Trials')
 
     # ids file
-    parser.add_argument('-data_folder', default='/Users/praveen/work/data/collections/ctgov/',
+    parser.add_argument('-data_folder', default='/Users/praveen/work/data/ctgov_Sep23/',
                         help='file containing clinical ids to process')
     # Accepted TUIs
-    parser.add_argument('-tui', default='/Users/praveen/work/data/clinical/tuis/tuis.txt',
+    parser.add_argument('-tui', default='/Users/praveen/work/data/tuis/tuis.txt',
                         help='stop word directory')
     # stop word file
-    parser.add_argument('-stop', default='/Users/praveen/work/data/clinical/stop-words/',
+    parser.add_argument('-stop', default='/Users/praveen/work/data/stopwords/',
                         help='stop word directory')
     # umls Redis port
     parser.add_argument('-umls_port', default=None, help='umls redis port (default: None)')
@@ -142,11 +142,11 @@ def _process_args():
     parser.add_argument('-pos', default=None, help='part-of-speech admitted tag file (default: None)')
 
     # output path
-    parser.add_argument('-out', default='/Users/praveen/work/research/ctgov/output/',
+    parser.add_argument('-out', default='/Users/praveen/work/output/processed_ctgovSep23/',
                         help='part-of-speech admitted tag file (default: None)')
 
     # number of processors to use
-    parser.add_argument('-c', default=5, type=int, help='number of processors (default: 1)')
+    parser.add_argument('-c', default=7, type=int, help='number of processors (default: 1)')
     return parser.parse_args(sys.argv[1:])
 
 
