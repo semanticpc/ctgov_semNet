@@ -5,7 +5,7 @@ import redis
 class UMLSDict:
 
     def __init__(self, host='localhost', port=27017):
-        self.redis_dict = redis.StrictRedis('localhost')
+        self.redis_dict = redis.StrictRedis('localhost', port=6379)
 
     def get_tui(self, cui):
         tuis = []
@@ -48,8 +48,8 @@ class UMLSDict:
 
 if __name__ == '__main__':
     umls = UMLSDict()
-    redis_dict = redis.StrictRedis('localhost')
-    print redis_dict.smembers('C1524119')
+    #redis_dict = redis.StrictRedis('localhost')
+    #print redis_dict.smembers('C1524119')
     #cuis = set(redis_dict.keys('breast car*'))
     #print cuis
     #c = cuis.pop()

@@ -1,4 +1,5 @@
 __author__ = 'praveen'
+
 from parser.ctgov import ClinicalTrial_Parser as CT_Parser
 from textAnnotator.conceptMatching import DictionaryMapping
 from textAnnotator.filters import ConceptFilters
@@ -15,12 +16,9 @@ import sys
 
 log = strd_logger('annotate-trials')
 
-def annotate_trials(f_data, outPath, nprocs=1):
+def annotate_trials(nct_ids, f_data, outPath, nprocs=1):
 
     # open the clinical trail ids file to process
-    nct_ids = []
-    for line in open(f_data + '/trial_ids.txt', 'rb'):
-        nct_ids.append(line.strip())
     corpus_path = f_data + '/trials_xml/'
 
     # Get clinical
@@ -30,7 +28,8 @@ def annotate_trials(f_data, outPath, nprocs=1):
     chunksize = int(math.ceil(len(nct_ids) / float(nprocs)))
     for i in xrange(nprocs):
         print chunksize * i, chunksize * (i + 1)
-        p = Process(target=_worker, args=(nct_ids[chunksize * i:chunksize * (i + 1)], corpus_path, outPath, (i + 1)))
+        p = Process(target=_worker, args=(nct_ids[chunksize * i:chunksize * (i + 1)],
+                                          corpus_path, outPath, (i + 1)))
         procs.append(p)
         p.start()
 
@@ -49,7 +48,9 @@ def _worker(process_ids, corpusPath, outPath, pid):
     for i in xrange(0, len(process_ids)):
         trial_ID = process_ids[i]
         trial = parser.parse(trial_ID)
-
+        if trial == False:
+            print trial_ID
+            continue
         allTxt = ''
         if trial.ec_text_exc is not None:
             allTxt = trial.ec_text_exc
@@ -60,6 +61,7 @@ def _worker(process_ids, corpusPath, outPath, pid):
         cleanText = nlpUtil.clean_text(allTxt)
         sentences = nlpUtil.get_sentences(cleanText)
         sentID = 1
+        out = open(outPath + '/' + str(trial_ID) + '.txt', 'w')
         for sent in sentences:
 
             sent = nlpUtil.pre_process(sent)
@@ -72,11 +74,12 @@ def _worker(process_ids, corpusPath, outPath, pid):
             #         continue
             #         print '\n', ' '.join(tokens) , '\n'
 
-            out = open(outPath + '/' + str(trial_ID) + '-' +  str(sentID) + '.txt', 'w')
+
             unicode_str = ' '.join(tokens)
             #print '\n', ' '.join(tokens) , '\n'
-            out.write(unicode_str.encode('utf8', 'ignore'))
+            out.write(unicode_str.encode('utf8', 'ignore') + '\n')
             sentID += 1
+        out.close()
 
         if i % 1000 == 0:
             log.info(' --- core %d: processed %d documents' % (pid, i))
@@ -94,7 +97,7 @@ def _process_args():
                         help='file containing clinical ids to process')
 
     # output path
-    parser.add_argument('-out', default='/Users/praveen/work/output/processed_ctgovSep23/sentDataset',
+    parser.add_argument('-out', default='/Users/praveen/work/output/processed_ctgovSep23/diseaseDataset/',
                         help='part-of-speech admitted tag file (default: None)')
 
     # number of processors to use
@@ -105,7 +108,11 @@ def _process_args():
 if __name__ == '__main__':
     args = _process_args()
 
-    annotate_trials(args.data_folder, args.out, args.c)
+    #annotate_trials(args.data_folder + '/trial_ids.txt', args.data_folder, args.out, args.c)
+    disease_name = 'cervical cancer'
+    d2t = pickle.load(open('/Users/praveen/work/data/disease_trail_mapping/disease2Trail.pkl'))
+    nct_ids = d2t[disease_name]
+    annotate_trials(nct_ids, args.data_folder, args.out +  'cervical_cancer/', args.c)
 
     # open the clinical trail ids file to process
     # nct_ids = []

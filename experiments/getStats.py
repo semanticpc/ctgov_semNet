@@ -22,6 +22,23 @@ def getStat(tot_freq, d_freq ):
                         d_freq[c].setdefault(d, 0)
                         d_freq[c][d] += 1
 
+
+
+def getStat_df(tot_freq, d_freq ):
+
+    for t in trials:
+        for sent in trials[t].concepts:
+            for window in sent:
+                for c in window:
+                    tot_freq.setdefault(c, 0)
+                    tot_freq[c] += 1
+                    for d in d2t[t]:
+                        d_freq.setdefault(c, dict())
+                        d_freq[c].setdefault(d, 0)
+                        d_freq[c][d] += 1
+
+
+
 def getMatrix(tot_freq, d_freq):
     cui_ctr = 0
     disease_ctr = 0
@@ -45,25 +62,26 @@ def getMatrix(tot_freq, d_freq):
 
         row = [cuis[c]] * len(col)
         m = m + coo_matrix((data, (row,col)), shape=m.get_shape())
-    return m
+    return (m, diseases, cuis)
 
 if __name__ == '__main__':
     tot_freq = dict()
     d_freq = dict()
     #m = m + coo_matrix((data, (row,col)), shape=(70000,1300))
-    d2t = pickle.load(open('/Users/praveen/work/data/clinical/disease_trail_mapping/trial2Disease.pkl'))
+    d2t = pickle.load(open('/Users/praveen/work/data/disease_trail_mapping/trial2Disease.pkl'))
 
 
     print 'start'
 
-    baseDir = '/Users/praveen/work/research/ctgov/output/annotated_trials'
+    baseDir = '/Users/praveen/work/output/processed_ctgovSep23/annotated_trials'
     for pFile in os.listdir(baseDir):
+        print pFile
         trials = pickle.load(open(baseDir + '/' + pFile))
         getStat(tot_freq, d_freq)#, cui_ctr, disease_ctr)
     print 'done'
     print 'start'
-    m = getMatrix(tot_freq, d_freq)
+    (m, diseases, cuis) = getMatrix(tot_freq, d_freq)
     print 'done'
-    pickle.dump(tot_freq, open('/Users/praveen/work/research/ctgov/output/stats/tot_freq.pkl', 'wb'))
-    pickle.dump(d_freq, open('/Users/praveen/work/research/ctgov/output/stats/d_freq.pkl', 'wb'))
-    pickle.dump(m, open('/Users/praveen/work/research/ctgov/output/stats/mat.pkl', 'wb'))
+    pickle.dump(cuis, open('/Users/praveen/work/output/processed_ctgovSep23/stats_df/cuis.pkl', 'wb'))
+    pickle.dump(diseases, open('/Users/praveen/work/output/processed_ctgovSep23/stats_df/diseases.pkl', 'wb'))
+    pickle.dump(m, open('/Users/praveen/work/output/processed_ctgovSep23/stats_df/mat.pkl', 'wb'))
