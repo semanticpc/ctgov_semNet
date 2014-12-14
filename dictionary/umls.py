@@ -55,7 +55,7 @@ if __name__ == '__main__':
     #c = cuis.pop()
     #print c, cuis.pop()
     print umls.exact_match('C1524119')
-    print umls.exact_match('yoga')
+    print umls.exact_match('age')
     print umls.exact_match('pregnancy')
     print umls.exact_match('breastfeeding')
     #print umls.get_tui('C0678222')

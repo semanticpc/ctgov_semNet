@@ -108,7 +108,8 @@ def _process_args():
     parser.add_argument('-pos', default=None, help='part-of-speech admitted tag file (default: None)')
 
     # output path
-    parser.add_argument('-out', default='/Users/praveen/work/research/ctgov/output/', help='part-of-speech admitted tag file (default: None)')
+    parser.add_argument('-out', default='/Users/praveen/work/research/ctgov/output/',
+                        help='part-of-speech admitted tag file (default: None)')
 
     # number of processors to use
     parser.add_argument('-c', default=1, type=int, help='number of processors (default: 1)')
